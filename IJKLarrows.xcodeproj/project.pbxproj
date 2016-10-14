@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 46;
+	objectVersion = 48;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -94,13 +94,12 @@
 				TargetAttributes = {
 					42FBFCD41DAFBA77008BC8ED = {
 						CreatedOnToolsVersion = 8.0;
-						DevelopmentTeam = 35U56HHZAU;
 						ProvisioningStyle = Automatic;
 					};
 				};
 			};
 			buildConfigurationList = 42FBFCD01DAFBA77008BC8ED /* Build configuration list for PBXProject "IJKLarrows" */;
-			compatibilityVersion = "Xcode 3.2";
+			compatibilityVersion = "Xcode 8.0";
 			developmentRegion = English;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -219,6 +218,7 @@
 		42FBFCDD1DAFBA77008BC8ED /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_IDENTITY = "Mac Developer";
 				DEVELOPMENT_TEAM = 35U56HHZAU;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 3.0;
@@ -228,6 +228,7 @@
 		42FBFCDE1DAFBA77008BC8ED /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_IDENTITY = "Mac Developer";
 				DEVELOPMENT_TEAM = 35U56HHZAU;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 3.0;
