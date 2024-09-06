@@ -16,7 +16,7 @@ func main() {
         exit(1)
     }
     print("started")
-    
+
     if CommandLine.arguments.contains(SwitchTildeArgument) {
         print("switching tilde")
         SwitchTilde = true
@@ -26,14 +26,6 @@ func main() {
     CFRunLoopAddSource(CFRunLoopGetCurrent(), runLoopSource, .commonModes)
     CGEvent.tapEnable(tap: eventTap, enable: true)
     CFRunLoopRun()
-}
-
-func printFlags(event: CGEvent) {
-    let flags0 = String(event.flags.rawValue & 0xff, radix: 16)
-    let flags1 = String((event.flags.rawValue >> 8) & 0xff, radix: 16)
-    let flags2 = String((event.flags.rawValue >> 16) & 0xff, radix: 16)
-    let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
-    print("0x", keyCode, flags2, flags1, flags0)
 }
 
 func myCGEventCallback(proxy: CGEventTapProxy, type: CGEventType, event: CGEvent, refcon: UnsafeMutableRawPointer?) -> Unmanaged<CGEvent>? {
@@ -47,13 +39,19 @@ func myCGEventCallback(proxy: CGEventTapProxy, type: CGEventType, event: CGEvent
     let kVK_RightArrow:Int64                = 0x7C
     let kVK_DownArrow:Int64                 = 0x7D
     let kVK_UpArrow:Int64                   = 0x7E
+    let kVK_PageUp:Int64                    = 0x74
+    let kVK_Home:Int64                      = 0x73
+    let kVK_PageDown:Int64                  = 0x79
+    let kVK_End:Int64                       = 0x77
 
     let maskLeftCmd = CGEventFlags(rawValue: 0x8)
     let maskRightCmd = CGEventFlags(rawValue: 0x10)
+    let maskFn = CGEventFlags(rawValue: 0x800100)
 
     if [.keyDown , .keyUp, .flagsChanged].contains(type) {
         let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
-//        printFlags(event: event)
+        let hasFn = event.flags.contains(maskFn)
+        // printFlags(event: event, end: "\t->\t")
 
         if SwitchTilde && keyCode == kVK_ANSI_Grave {
             event.setIntegerValueField(.keyboardEventKeycode, value: kVK_ANSI_Section)
@@ -64,16 +62,16 @@ func myCGEventCallback(proxy: CGEventTapProxy, type: CGEventType, event: CGEvent
         if event.flags.contains(maskRightCmd) {
             var changed = false
             if keyCode == kVK_ANSI_I {
-                event.setIntegerValueField(.keyboardEventKeycode, value: kVK_UpArrow)
+                event.setIntegerValueField(.keyboardEventKeycode, value: hasFn ? kVK_PageUp : kVK_UpArrow)
                 changed = true
             } else if keyCode == kVK_ANSI_J {
-                event.setIntegerValueField(.keyboardEventKeycode, value: kVK_LeftArrow)
+                event.setIntegerValueField(.keyboardEventKeycode, value: hasFn ? kVK_Home : kVK_LeftArrow)
                 changed = true
             } else if keyCode == kVK_ANSI_K {
-                event.setIntegerValueField(.keyboardEventKeycode, value: kVK_DownArrow)
+                event.setIntegerValueField(.keyboardEventKeycode, value: hasFn ? kVK_PageDown : kVK_DownArrow)
                 changed = true
             } else if keyCode == kVK_ANSI_L {
-                event.setIntegerValueField(.keyboardEventKeycode, value: kVK_RightArrow)
+                event.setIntegerValueField(.keyboardEventKeycode, value: hasFn ? kVK_End : kVK_RightArrow)
                 changed = true
             }
             if changed {
@@ -83,11 +81,19 @@ func myCGEventCallback(proxy: CGEventTapProxy, type: CGEventType, event: CGEvent
                 event.flags.remove(maskRightCmd)
             }
         }
-//        printFlags(event: event)
-//        print("")
+        // printFlags(event: event, end: "\n")
     }
     return Unmanaged.passRetained(event)
 }
+
+func printFlags(event: CGEvent, end: String) {
+    let r = event.flags.rawValue
+    let flags = [ r & 0xf, (r >> 4) & 0xf, (r >> 8) & 0xf, (r >> 12) & 0xf, (r >> 16) & 0xf, (r >> 20) & 0xf, (r >> 24) & 0xf, (r >> 28) & 0xf ]
+    let sflags = flags.reversed().map { String($0, radix: 16) }
+    let keyCode = String(event.getIntegerValueField(.keyboardEventKeycode), radix: 16)
+    print("0x" + keyCode, "    ", sflags.joined(separator: ""), end, terminator: "")
+}
+
 
 
 //let kVK_ANSI_A:Int64                    = 0x00
@@ -189,11 +195,7 @@ func myCGEventCallback(proxy: CGEventTapProxy, type: CGEventType, event: CGEvent
 //let kVK_F12:Int64                       = 0x6F
 //let kVK_F15:Int64                       = 0x71
 //let kVK_Help:Int64                      = 0x72
-//let kVK_Home:Int64                      = 0x73
-//let kVK_PageUp:Int64                    = 0x74
 //let kVK_ForwardDelete:Int64             = 0x75
 //let kVK_F4:Int64                        = 0x76
-//let kVK_End:Int64                       = 0x77
 //let kVK_F2:Int64                        = 0x78
-//let kVK_PageDown:Int64                  = 0x79
 //let kVK_F1:Int64                        = 0x7A
