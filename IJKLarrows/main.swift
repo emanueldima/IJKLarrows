@@ -1,5 +1,8 @@
 import Foundation
 import Cocoa
+import Carbon
+import IOKit.hid
+
 
 
 var SwitchTilde = false
@@ -25,6 +28,8 @@ func main() {
     let runLoopSource = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, eventTap, 0)
     CFRunLoopAddSource(CFRunLoopGetCurrent(), runLoopSource, .commonModes)
     CGEvent.tapEnable(tap: eventTap, enable: true)
+
+    let watcher = KeyboardWatcher()
     CFRunLoopRun()
 }
 
@@ -94,6 +99,56 @@ func printFlags(event: CGEvent, end: String) {
     print("0x" + keyCode, "    ", sflags.joined(separator: ""), end, terminator: "")
 }
 
+final class KeyboardWatcher {
+    private let manager: IOHIDManager
+
+    init?() {
+        manager = IOHIDManagerCreate(kCFAllocatorDefault, IOOptionBits(kIOHIDOptionsTypeNone))
+        // match all keyboard devices
+        let matching: [String: Any] = [
+            kIOHIDDeviceUsagePageKey as String: kHIDPage_GenericDesktop,
+            kIOHIDDeviceUsageKey as String: kHIDUsage_GD_Keyboard
+        ]
+        IOHIDManagerSetDeviceMatching(manager, matching as CFDictionary)
+
+        let ctx = UnsafeMutableRawPointer(Unmanaged.passUnretained(self).toOpaque())
+
+        IOHIDManagerRegisterInputValueCallback(manager, { context, _, _, value in
+            guard let context = context else { return }
+            let this = Unmanaged<KeyboardWatcher>
+                .fromOpaque(context)
+                .takeUnretainedValue()
+            this.handle(value: value)
+        }, ctx)
+
+        IOHIDManagerScheduleWithRunLoop(manager,
+                                        CFRunLoopGetCurrent(),
+                                        CFRunLoopMode.defaultMode.rawValue)
+
+        let status = IOHIDManagerOpen(manager, IOOptionBits(kIOHIDOptionsTypeNone))
+        guard status == kIOReturnSuccess else {
+            print("IOHIDManagerOpen failed: \(status)")
+            return nil
+        }
+    }
+
+    private func handle(value: IOHIDValue) {
+        let element = IOHIDValueGetElement(value)
+
+        // Only care about keyboard / keypad usage page
+        guard IOHIDElementGetUsagePage(element) == kHIDPage_KeyboardOrKeypad else { return }
+
+        let device = IOHIDElementGetDevice(element)
+
+        let pr = IOHIDDeviceGetProperty(device, kIOHIDProductKey as CFString) as? String ?? "Unknown keyboard"
+        // print("Product: \(pr)")
+        if pr.contains("Apple Internal Keyboard") || pr.contains("EmKeyboard") {
+            SwitchTilde = true
+        } else {
+            SwitchTilde = false
+        }
+    }
+}
 
 
 //let kVK_ANSI_A:Int64                    = 0x00
